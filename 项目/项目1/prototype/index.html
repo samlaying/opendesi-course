@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitLog · 低保真结构稿</title>
+<!-- 低保真：只验证结构跳转，不含视觉 token（视觉见 app/index.html） -->
+<style>
+  body{font-family:system-ui;max-width:420px;margin:24px auto;background:#eee;color:#333}
+  .box{background:#ddd;border:1px dashed #999;border-radius:4px;padding:12px;margin-bottom:8px}
+  .ph{background:#ccc;text-align:center;padding:16px;border-radius:4px}
+  .tabbar{display:flex;gap:8px;margin-top:16px}
+  .tabbar .ph{flex:1}
+  h2{font-size:14px;color:#666}
+  button{font-family:inherit}
+  .view{display:none}.view.on{display:block}
+</style>
+</head>
+<body>
+
+<!-- 视图1 · 今日 -->
+<section class="view on" id="v-today">
+  <div class="box">← 2026-09-12 → <span style="float:right">[补记角标区]</span></div>
+  <div class="box" style="display:flex;gap:8px">
+    <div class="ph" style="flex:1">今日：未打卡 / 已打卡</div>
+    <div class="ph" style="flex:1">连续 N 天</div>
+  </div>
+  <h2>今日条目</h2>
+  <div class="box">EntryRow：卧推 60kg × 5组</div>
+  <div class="box">EntryRow：哑铃飞鸟 12kg × 4组 <span>[补]</span></div>
+  <div class="box" style="border-style:solid">空态示例：还没有记录 → [记第一笔]</div>
+  <div class="ph" style="padding:20px">＋ 记一笔（唯一主按钮）</div>
+  <div class="tabbar"><div class="ph">今日</div><div class="ph">月视图</div></div>
+</section>
+
+<!-- 视图2 · 记一笔 -->
+<section class="view" id="v-form">
+  <div class="box">← 返回 · 记一笔 · [取消]</div>
+  <h2>部位（Segmented 8选1）</h2>
+  <div class="box" style="display:flex;flex-wrap:wrap;gap:4px">
+    <span class="ph">胸</span><span class="ph">背</span><span class="ph">腿</span><span class="ph">肩</span>
+    <span class="ph">臂</span><span class="ph">核心</span><span class="ph">有氧</span><span class="ph">其他</span>
+  </div>
+  <h2>动作</h2>
+  <div class="box" style="display:flex;gap:4px"><span class="ph">卧推</span><span class="ph">上斜卧推</span><span class="ph">+自定义</span></div>
+  <h2>明细（多条）</h2>
+  <div class="box">重量 kg [60] × 组数 [5]  [删除]</div>
+  <div class="box">重量 kg [62.5] × 组数 [3] [删除]</div>
+  <div class="box">[+ 加一条] · 错误文案区（字段下方）</div>
+  <div class="ph" style="padding:20px">保存 = 打卡（primary）</div>
+</section>
+
+<!-- 视图3 · 月视图 -->
+<section class="view" id="v-month">
+  <div class="box">← 2026年9月 →</div>
+  <div class="box">7列点阵：●已打 ◐补 ○空 未来灰 · 今天描边</div>
+  <div class="box" style="display:flex;gap:8px">
+    <span class="ph">本月 X 次</span><span class="ph">连续 Y 天</span><span class="ph">最长 Z 天</span>
+  </div>
+  <div class="box">点过去某天 → 跳该日今日视图</div>
+  <div class="tabbar"><div class="ph">今日</div><div class="ph">月视图</div></div>
+</section>
+
+<p style="text-align:center">
+  <button onclick="for(const v of ['today','form','month'])document.getElementById('v-'+v).classList.toggle('on')">切换视图（演示）</button>
+</p>
+</body>
+</html>

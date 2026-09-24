@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitLog · 健身打卡</title>
+<style>
+  /* ===== DS Tokens（04-design-system.md）===== */
+  :root{
+    --gray-900:#1A1A1A; --gray-600:#6B6B6B; --gray-300:#C9C9C5;
+    --gray-100:#EDEDE9; --gray-50:#FAFAF8;
+    --orange-600:#D9480F; --orange-500:#E8590C;
+    --green-600:#2F9E44;
+    --surface:var(--gray-50); --card:#FFFFFF;
+    --text-1:var(--gray-900); --text-2:var(--gray-600);
+    --action:var(--orange-500); --action-disabled:var(--gray-300);
+    --checked:var(--green-600);
+    --s1:4px; --s2:8px; --s3:16px; --s4:24px;   /* space.4/8/16/24 */
+    --r-card:12px; --r-btn:8px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;background:var(--surface);
+    color:var(--text-1);font-size:16px;max-width:440px;margin:0 auto;min-height:100vh;
+    display:flex;flex-direction:column}
+  button{font-family:inherit;font-size:16px;cursor:pointer;border:none;background:none}
+  .view{display:none;flex:1;padding:var(--s3);padding-bottom:calc(56px + var(--s4))}
+  .view.on{display:block}
+
+  /* 今日头部 */
+  .daynav{display:flex;align-items:center;justify-content:space-between;padding:var(--s2) 0 var(--s3)}
+  .daynav .date{font-size:16px;font-weight:600}
+  .daynav button{padding:var(--s2);border-radius:var(--r-btn);color:var(--text-2)}
+  .daynav button:disabled{color:var(--gray-300);cursor:default}
+  .backfill-tag{font-size:13px;color:var(--text-2);background:var(--gray-100);
+    border-radius:var(--r-btn);padding:var(--s1) var(--s2)}
+
+  /* StatTile */
+  .stats{display:flex;gap:var(--s2);margin-bottom:var(--s3)}
+  .tile{flex:1;background:var(--card);border-radius:var(--r-card);padding:var(--s3);text-align:center}
+  .tile .num{font-size:28px;font-weight:700;line-height:1.1}
+  .tile .lbl{font-size:13px;color:var(--text-2);margin-top:var(--s1)}
+  .tile .num.ok{color:var(--checked)}
+
+  /* 条目列表 */
+  h3.sec{font-size:13px;color:var(--text-2);margin:var(--s2) var(--s1);font-weight:500}
+  .entry{display:flex;align-items:baseline;gap:var(--s2);background:var(--card);
+    border-radius:var(--r-card);padding:var(--s3);margin-bottom:var(--s2)}
+  .entry .mv{font-weight:600;flex:1}
+  .entry .wt{font-size:28px;font-weight:700}
+  .entry .un{font-size:13px;color:var(--text-2)}
+  .entry .del{color:var(--text-2);padding:var(--s1)}
+  .badge{font-size:13px;color:var(--checked);border:1px solid var(--checked);
+    border-radius:var(--r-btn);padding:0 var(--s1)}
+  .empty{background:var(--card);border-radius:var(--r-card);padding:var(--s4);
+    text-align:center;color:var(--text-2)}
+  .empty button{color:var(--action);font-weight:600;margin-top:var(--s2)}
+
+  /* 主按钮 */
+  .primary{display:block;width:100%;padding:var(--s3);margin-top:var(--s3);
+    background:var(--action);color:#fff;border-radius:var(--r-btn);font-weight:600;font-size:16px}
+  .primary:active{background:var(--orange-600)}
+  .ghost{color:var(--text-2);text-decoration:underline;padding:var(--s2)}
+
+  /* 底部 tab */
+  .tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:440px;
+    display:flex;background:var(--card);border-top:1px solid var(--gray-100)}
+  .tabbar button{flex:1;padding:var(--s2) 0 calc(var(--s2) + env(safe-area-inset-bottom));
+    color:var(--text-2);font-size:13px}
+  .tabbar button.on{color:var(--action);font-weight:600}
+
+  /* 记一笔表单 */
+  .seg{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-bottom:var(--s3)}
+  .seg button{background:var(--card);border:1px solid var(--gray-100);border-radius:var(--r-btn);
+    padding:var(--s2);color:var(--text-1)}
+  .seg button.on{background:var(--action);border-color:var(--action);color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s3)}
+  .chips button{background:var(--card);border:1px solid var(--gray-100);border-radius:var(--r-btn);
+    padding:var(--s1) var(--s2);font-size:13px;color:var(--text-1)}
+  .chips button.on{border-color:var(--action);color:var(--action);font-weight:600}
+  .chips input{border:1px solid var(--gray-100);border-radius:var(--r-btn);padding:var(--s1) var(--s2);
+    font-size:13px;width:96px;font-family:inherit}
+  .rowline{display:flex;align-items:center;gap:var(--s2);background:var(--card);
+    border-radius:var(--r-card);padding:var(--s2) var(--s3);margin-bottom:var(--s2)}
+  .rowline input{width:72px;font-size:16px;font-family:inherit;border:1px solid var(--gray-100);
+    border-radius:var(--r-btn);padding:var(--s1) var(--s2);text-align:center}
+  .rowline input.err{border-color:var(--orange-600)}
+  .rowline .x{color:var(--text-2)}
+  .errmsg{font-size:13px;color:var(--orange-600);margin:-var(--s1) 0 var(--s2) var(--s1)}
+  .addrow{color:var(--action);font-weight:600;padding:var(--s2)}
+  .formfoot{display:flex;gap:var(--s3);align-items:center;margin-top:var(--s3)}
+
+  /* 月视图 */
+  .monnav{display:flex;align-items:center;justify-content:space-between;padding:var(--s2) 0 var(--s3)}
+  .monnav .m{font-weight:600}
+  .monnav button{padding:var(--s2);color:var(--text-2);border-radius:var(--r-btn)}
+  .monnav button:disabled{color:var(--gray-300)}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s2);background:var(--card);
+    border-radius:var(--r-card);padding:var(--s3)}
+  .grid .wd{font-size:13px;color:var(--text-2);text-align:center;padding-bottom:var(--s1)}
+  .grid .d{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%}
+  .grid .dot{width:12px;height:12px;border-radius:50%;background:var(--gray-100)}
+  .grid .d.checked .dot{background:var(--checked)}
+  .grid .d.backfill .dot{background:var(--checked);opacity:.6}
+  .grid .d.future .dot{background:var(--gray-100);opacity:.4}
+  .grid .d.today .dot{outline:2px solid var(--action);outline-offset:2px}
+  .grid .d.past{cursor:pointer}
+  .mstats{display:flex;gap:var(--s2);margin-top:var(--s3)}
+  .mstats .tile{padding:var(--s2)}
+  .mstats .num{font-size:28px}
+  .tools{display:flex;gap:var(--s4);justify-content:center;margin-top:var(--s4)}
+</style>
+</head>
+<body>
+
+<!-- 视图1 · 今日 -->
+<section class="view on" id="v-today">
+  <div class="daynav">
+    <button id="prevDay">‹</button>
+    <span class="date" id="dayLabel"></span>
+    <button id="nextDay">›</button>
+  </div>
+  <div class="stats">
+    <div class="tile"><div class="num" id="stChecked">—</div><div class="lbl" id="stCheckedLbl">今日</div></div>
+    <div class="tile"><div class="num" id="stStreak">0</div><div class="lbl">连续天数</div></div>
+  </div>
+  <h3 class="sec">训练条目</h3>
+  <div id="entryList"></div>
+  <button class="primary" id="btnAdd">＋ 记一笔</button>
+  <div class="tools"><button class="ghost" id="btnExport">导出 JSON</button><button class="ghost" id="btnWipe">清空数据</button></div>
+</section>
+
+<!-- 视图2 · 记一笔 -->
+<section class="view" id="v-form">
+  <div class="daynav">
+    <button id="formBack">‹ 返回</button>
+    <span class="date">记一笔</span>
+    <span class="backfill-tag" id="formTag" style="display:none">补记</span>
+  </div>
+  <h3 class="sec">部位</h3>
+  <div class="seg" id="segPart"></div>
+  <h3 class="sec">动作</h3>
+  <div class="chips" id="chipsMove"></div>
+  <h3 class="sec">明细</h3>
+  <div id="rows"></div>
+  <div id="rowErr"></div>
+  <button class="addrow" id="btnAddRow">＋ 加一条</button>
+  <div class="formfoot">
+    <button class="primary" id="btnSave" style="flex:1">保存并打卡</button>
+  </div>
+  <div class="formfoot"><button class="ghost" id="btnCancel">取消</button></div>
+</section>
+
+<!-- 视图3 · 月视图 -->
+<section class="view" id="v-month">
+  <div class="monnav">
+    <button id="prevMon">‹</button><span class="m" id="monLabel"></span><button id="nextMon">›</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="mstats">
+    <div class="tile"><div class="num" id="mCount">0</div><div class="lbl">本月次数</div></div>
+    <div class="tile"><div class="num" id="mCur">0</div><div class="lbl">当前连续</div></div>
+    <div class="tile"><div class="num" id="mMax">0</div><div class="lbl">最长连续</div></div>
+  </div>
+</section>
+
+<nav class="tabbar">
+  <button class="on" data-v="today">今日</button>
+  <button data-v="month">月视图</button>
+</nav>
+
+<script>
+"use strict";
+/* ===== 数据层（人机同读一份 localStorage）===== */
+const KEY = "fitlog.v1";
+const MOVES = {
+  "胸":["卧推","上斜卧推","哑铃卧推","双杠臂屈伸"],
+  "背":["引体向上","高位下拉","杠铃划船","坐姿划船"],
+  "腿":["深蹲","腿举","罗马尼亚硬拉","腿弯举"],
+  "肩":["推举","侧平举","面拉"],
+  "臂":["二头弯举","三头下压","锤式弯举"],
+  "核心":["平板支撑","卷腹","悬垂举腿"],
+  "有氧":["跑步","椭圆机","划船机","跳绳"],
+  "其他":["拉伸","泡沫轴"]
+};
+const PARTS = Object.keys(MOVES);
+
+let state = load();
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || {days:{}}; }
+  catch{ return {days:{}}; }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+const pad = n => String(n).padStart(2,"0");
+const fmt = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => fmt(new Date());
+function dayOf(ds){ return state.days[ds]; }
+
+/* streak：今天无记录则从昨天起算，连续有记录的天数（Context 状态表：不可手改） */
+function streak(){
+  let n = 0; const d = new Date();
+  if(!dayOf(fmt(d))) d.setDate(d.getDate()-1);
+  while(dayOf(fmt(d))){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+/* 最长连续（扫描全部历史） */
+function maxStreak(){
+  const keys = Object.keys(state.days).sort();
+  let max = 0, cur = 0, prev = null;
+  for(const k of keys){
+    if(prev){
+      const p = new Date(prev+"T00:00:00"); p.setDate(p.getDate()+1);
+      cur = (fmt(p) === k) ? cur+1 : 1;
+    } else cur = 1;
+    max = Math.max(max,cur); prev = k;
+  }
+  return max;
+}
+
+/* ===== 视图切换 ===== */
+const $ = id => document.getElementById(id);
+function show(v){
+  for(const s of document.querySelectorAll(".view")) s.classList.remove("on");
+  $("v-"+v).classList.add("on");
+  document.querySelectorAll(".tabbar button").forEach(b=>b.classList.toggle("on", b.dataset.v===v));
+  if(v==="today") renderToday();
+  if(v==="month") renderMonth();
+}
+document.querySelectorAll(".tabbar button").forEach(b=>b.onclick=()=>show(b.dataset.v));
+
+/* ===== 今日视图 ===== */
+let curDate = new Date();
+function renderToday(){
+  const ds = fmt(curDate), day = dayOf(ds), isToday = ds === todayStr();
+  $("dayLabel").textContent = `${curDate.getMonth()+1}月${curDate.getDate()}日 ${"日一二三四五六"[curDate.getDay()===0?0:curDate.getDay()]}`.replace(/(\d+月\d+日) (.)$/,"$1 周$2");
+  $("nextDay").disabled = isToday;
+  const el = $("entryList");
+  if(day && day.entries.length){
+    el.innerHTML = day.entries.map((e,i)=>`
+      <div class="entry">
+        <span class="mv">${e.move}<span class="un"> · ${e.part}</span></span>
+        <span class="wt">${e.weight}</span><span class="un">kg ×${e.sets}组</span>
+        ${day.backfill?'<span class="badge">补</span>':""}
+        <button class="del" data-i="${i}">✕</button>
+      </div>`).join("");
+    el.querySelectorAll(".del").forEach(b=>b.onclick=()=>{
+      day.entries.splice(+b.dataset.i,1);
+      if(!day.entries.length) delete state.days[ds];
+      save(); renderToday();
+    });
+  } else {
+    el.innerHTML = `<div class="empty">${isToday?"还没有记录":"这天没练（或忘了记）"}<br>
+      <button id="emptyGo">${isToday?"记第一笔":"补一笔"}</button></div>`;
+    $("emptyGo").onclick=()=>openForm();
+  }
+  const done = !!(day && day.entries.length);
+  $("stChecked").textContent = done ? "✓" : "—";
+  $("stChecked").className = "num" + (done ? " ok" : "");
+  $("stCheckedLbl").textContent = done ? "已打卡" : "未打卡";
+  $("stStreak").textContent = streak();
+}
+$("prevDay").onclick=()=>{ curDate.setDate(curDate.getDate()-1); renderToday(); };
+$("nextDay").onclick=()=>{ if(fmt(curDate)<todayStr()){ curDate.setDate(curDate.getDate()+1); renderToday(); } };
+$("btnAdd").onclick=()=>openForm();
+
+/* ===== 记一笔 ===== */
+let fPart = null, fMove = null;
+function openForm(){
+  const isToday = fmt(curDate) === todayStr();
+  $("formTag").style.display = isToday ? "none" : "";
+  $("segPart").innerHTML = PARTS.map(p=>`<button data-p="${p}">${p}</button>`).join("");
+  $("segPart").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    fPart=b.dataset.p; fMove=null;
+    $("segPart").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    renderChips();
+  });
+  fPart=PARTS[0]; $("segPart").querySelector("button").classList.add("on"); renderChips();
+  $("rows").innerHTML=""; $("rowErr").textContent=""; addRow();
+  show("form");
+}
+function renderChips(){
+  $("chipsMove").innerHTML =
+    MOVES[fPart].map(m=>`<button data-m="${m}">${m}</button>`).join("") +
+    `<input id="customMove" placeholder="自定义…">`;
+  $("chipsMove").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    fMove=b.dataset.m;
+    $("chipsMove").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    $("customMove").value="";
+  });
+  $("customMove").oninput=e=>{ fMove=e.target.value.trim()||null;
+    $("chipsMove").querySelectorAll("button").forEach(x=>x.classList.remove("on")); };
+}
+function addRow(){
+  const div=document.createElement("div");
+  div.className="rowline";
+  div.innerHTML=`<input type="number" inputmode="decimal" step="2.5" min="0" placeholder="60" class="w">
+    <span class="x">kg ×</span>
+    <input type="number" inputmode="numeric" min="1" placeholder="5" class="s">
+    <span class="x">组</span><button class="del">✕</button>`;
+  div.querySelector(".del").onclick=()=>{ if($("rows").children.length>1) div.remove(); };
+  $("rows").appendChild(div);
+}
+$("btnAddRow").onclick=addRow;
+$("btnCancel").onclick=$("formBack").onclick=()=>show("today");
+$("btnSave").onclick=()=>{
+  if(!fMove){ $("rowErr").textContent="请选择或输入动作名"; return; }
+  const entries=[];
+  for(const r of $("rows").querySelectorAll(".rowline")){
+    const w=r.querySelector(".w"), s=r.querySelector(".s");
+    const wv=parseFloat(w.value), sv=parseInt(s.value,10);
+    if(isNaN(wv)||wv<=0||isNaN(sv)||sv<1){
+      w.classList.toggle("err",isNaN(wv)||wv<=0);
+      s.classList.toggle("err",isNaN(sv)||sv<1);
+      $("rowErr").textContent="重量和组数要填完整（重量>0，组数≥1）"; return;
+    }
+    entries.push({part:fPart, move:fMove, weight:wv, sets:sv});
+  }
+  const ds=fmt(curDate);
+  const day=state.days[ds]||{entries:[],backfill:false};
+  day.entries=day.entries.concat(entries);
+  day.backfill = ds !== todayStr();   /* 补记标记：非当日保存（Context：补记计入 streak，如实标识） */
+  state.days[ds]=day; save();
+  show("today");
+};
+
+/* ===== 月视图 ===== */
+let curMon = new Date();
+function renderMonth(){
+  const y=curMon.getFullYear(), m=curMon.getMonth();
+  $("monLabel").textContent=`${y}年${m+1}月`;
+  const now=new Date();
+  $("nextMon").disabled = (y===now.getFullYear() && m===now.getMonth());
+  const first=new Date(y,m,1);
+  const lead=(first.getDay()+6)%7;                    /* 周一起始 */
+  const days=new Date(y,m+1,0).getDate();
+  let html=["一","二","三","四","五","六","日"].map(w=>`<span class="wd">${w}</span>`).join("");
+  for(let i=0;i<lead;i++) html+=`<span class="d"></span>`;
+  let count=0;
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${pad(m+1)}-${pad(d)}`;
+    const day=dayOf(ds), has=!!(day&&day.entries.length);
+    const future=ds>todayStr(), today=ds===todayStr();
+    if(has) count++;
+    const cls=["d", has?(day.backfill?"backfill":"checked"):(future?"future":""),
+      today?"today":"", !future&&!today?"past":""].join(" ");
+    html+=`<span class="${cls}" data-ds="${ds}"><span class="dot"></span></span>`;
+  }
+  $("grid").innerHTML=html;
+  $("grid").querySelectorAll(".d.past,.d.today").forEach(c=>c.onclick=()=>{
+    curDate=new Date(c.dataset.ds+"T00:00:00"); show("today");
+  });
+  $("mCount").textContent=count;
+  $("mCur").textContent=streak();
+  $("mMax").textContent=maxStreak();
+}
+$("prevMon").onclick=()=>{ curMon.setMonth(curMon.getMonth()-1); renderMonth(); };
+$("nextMon").onclick=()=>{ curMon.setMonth(curMon.getMonth()+1); renderMonth(); };
+
+/* ===== 导出 / 清空（Context 边界：本地数据归用户）===== */
+$("btnExport").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=`fitlog-${todayStr()}.json`; a.click();
+  URL.revokeObjectURL(a.href);
+};
+$("btnWipe").onclick=()=>{   /* DS 规则7：破坏性操作二次确认，非 primary */
+  if(confirm("确定清空全部打卡记录？此操作不可恢复。建议先导出 JSON 备份。")){
+    state={days:{}}; save(); renderToday();
+  }
+};
+
+renderToday();
+</script>
+</body>
+</html>
